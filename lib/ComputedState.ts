@@ -2,26 +2,29 @@ import React from "react";
 import { CalculatorState } from "./CalculatorState";
 import { memoize } from "lodash";
 
-export class CalculatorComputedState {
-  stage1_flour_grams: number;
-  stage1_water_grams: number;
-  stage1_combined_flour_water_grams: number;
-  stage1_output_grams: number;
-
-  stage2_flour_grams: number;
-  stage2_water_grams: number;
-  stage2_combined_flour_water_grams: number;
-  stage2_output_grams: number;
-
-  mixing_flour_grams: number;
-  mixing_water_grams: number;
-  mixing_salt_grams: number;
-  mixing_combined_flour_water_grams: number;
-
+export type CalculatorComputedState = {
+  stage1: {
+    flour_grams: number;
+    water_grams: number;
+    combined_flour_water_grams: number;
+    output_grams: number;
+  }
+  stage2: {
+    flour_grams: number;
+    water_grams: number;
+    combined_flour_water_grams: number;
+    output_grams: number;
+  }
+  mixing: {
+    flour_grams: number;
+    water_grams: number;
+    combined_flour_water_grams: number;
+    salt_grams: number;
+  }
   final_dough_weight: number;
 }
 
-export function useComputedCalculatorState(state: CalculatorState): CalculatorComputedState {
+export function useComputedCalculatorState(state: CalculatorState): CalculatorComputedState | undefined {
   const [computed, setComputed] = React.useState<CalculatorComputedState>();
 
   React.useEffect(() => {
@@ -30,18 +33,24 @@ export function useComputedCalculatorState(state: CalculatorState): CalculatorCo
     s.salt_percent = toPercent(s.salt_percent);
     s.mixing_percent = toPercent(s.mixing_percent);
     setComputed({
-      stage1_flour_grams: calc_stage1_flour_grams(s),
-      stage1_water_grams: calc_stage1_water_grams(s),
-      stage1_combined_flour_water_grams: calc_stage1_combined_flour_water_grams(s),
-      stage1_output_grams: calc_stage1_output_grams(s),
-      stage2_flour_grams: calc_stage2_flour_grams(s),
-      stage2_water_grams: calc_stage2_water_grams(s),
-      stage2_combined_flour_water_grams: calc_stage2_combined_flour_water_grams(s),
-      stage2_output_grams: calc_stage2_output_grams(s),
-      mixing_flour_grams: calc_mixing_flour_grams(s),
-      mixing_water_grams: calc_mixing_water_grams(s),
-      mixing_salt_grams: calc_mixing_salt_grams(s),
-      mixing_combined_flour_water_grams: calc_mixing_combined_flour_water_grams(s),
+      stage1: {
+        flour_grams: calc_stage1_flour_grams(s),
+        water_grams: calc_stage1_water_grams(s),
+        combined_flour_water_grams: calc_stage1_combined_flour_water_grams(s),
+        output_grams: calc_stage1_output_grams(s),
+      },
+      stage2: {
+        flour_grams: calc_stage2_flour_grams(s),
+        water_grams: calc_stage2_water_grams(s),
+        combined_flour_water_grams: calc_stage2_combined_flour_water_grams(s),
+        output_grams: calc_stage2_output_grams(s),
+      },
+      mixing: {
+        flour_grams: calc_mixing_flour_grams(s),
+        water_grams: calc_mixing_water_grams(s),
+        combined_flour_water_grams: calc_mixing_combined_flour_water_grams(s),
+        salt_grams: calc_mixing_salt_grams(s),
+      },
       final_dough_weight: calc_final_dough_weight(s),
     })
   }, [state]);

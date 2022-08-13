@@ -4,6 +4,7 @@ import { CalculatorState } from "./CalculatorState";
 import { CalculatorComputedState, useComputedCalculatorState } from "./ComputedState";
 import { InputPercent, InputGrams, InputLoafCount, InputRange } from "./forms/Input";
 import { TabItem, Tabs } from "./Tabs";
+import { round } from "lodash";
 
 function DefaultCalculatorState(): CalculatorState {
   return {
@@ -21,8 +22,6 @@ function DefaultCalculatorState(): CalculatorState {
 export function Calculator() {
   const [state, setState] = React.useState(DefaultCalculatorState());
   const computed = useComputedCalculatorState(state)
-  const computedFixed = Object.entries(computed || {})
-    .reduce((acc, [key, val]) => (acc[key] = (+val).toFixed(0)) && acc, {} as CalculatorComputedState);
 
   const tabs: TabItem[] = [
     { label: 'Options', content: <CalculatorOptions s={state} setState={setState} /> },
@@ -38,11 +37,11 @@ export function Calculator() {
     <Tabs tabs={tabs} />
     {Arrow}
     <div className="sm:flex justify-center">
-      <OutputProperties state={state} computed={computedFixed}/>
+      <OutputProperties state={state} computed={computed}/>
     </div>
     {Arrow}
     <div className="flex py-6">
-      <Loaves state={state} computed={computedFixed}/>
+      <Loaves state={state} computed={computed}/>
     </div>
   </div>
 }
@@ -51,8 +50,9 @@ function Loaves(props: {state: CalculatorState, computed: CalculatorComputedStat
   const loaves = new Array(props.state.loaf_count).fill(0);
 
   return <div className="flex gap-3 flex-shrink-0 flex-wrap w-full justify-center">
-    {loaves.map((_, index) => <div className="bg-orange-100 rounded-xl p-8">
-      Loaf {index + 1}
+    {loaves.map((_, index) => <div key={index} className="bg-orange-100 rounded-3xl p-8 flex-shrink-0 flex flex-col items-center">
+      <span>Loaf {index + 1}</span>
+      <span className="text-gray-500 text-xs">{props.state.loaf_weight_grams} g</span>
     </div>)}
   </div>
 }
@@ -62,36 +62,36 @@ function OutputProperties({state, computed}: {state: CalculatorState, computed: 
   return <div className="py-3 flex flex-col sm:flex-row sm:flex-wrap gap-3">
     <Card title="Stage 1">
       <Table rows={[
-        {key: '🌾 Flour', value: computed.stage1_flour_grams + ' g'},
-        {key: '💧 Water', value: computed.stage1_water_grams + ' g'},
-        {key: '🎬 Starter', value: state.stage1_starter_grams + ' g'},
+        {key: '🌾 Flour', value: round(computed?.stage1?.flour_grams) + ' g'},
+        {key: '💧 Water', value: round(computed?.stage1?.water_grams) + ' g'},
+        {key: '🎬 Starter', value: round(state.stage1_starter_grams) + ' g'},
       ]}/>
       {Arrow}
       <Table rows={[
-        {key: '🟰 Output', value: computed.stage1_output_grams + ' g'},
+        {key: '🟰 Output', value: round(computed?.stage1?.output_grams) + ' g'},
       ]}/>
     </Card>
     <Card title="Stage 2">
       <Table rows={[
-        {key: '🌾 Flour', value: computed.stage2_flour_grams + ' g'},
-        {key: '💧 Water', value: computed.stage2_water_grams + ' g'},
-        {key: '🎬 Starter', value: state.stage2_starter_grams + ' g'},
+        {key: '🌾 Flour', value: round(computed?.stage2?.flour_grams) + ' g'},
+        {key: '💧 Water', value: round(computed?.stage2?.water_grams) + ' g'},
+        {key: '🎬 Starter', value: round(state.stage2_starter_grams) + ' g'},
       ]}/>
       {Arrow}
       <Table rows={[
-        {key: '🟰 Output', value: computed.stage2_output_grams + ' g'},
+        {key: '🟰 Output', value: round(computed?.stage2?.output_grams) + ' g'},
       ]}/>
     </Card>
     <Card title="Mixing">
       <Table rows={[
-        {key: '🌾 Flour', value: computed.mixing_flour_grams + ' g'},
-        {key: '💧 Water', value: computed.mixing_water_grams + ' g'},
-        {key: '🧂 Salt', value: computed.mixing_salt_grams + ' g'},
-        {key: '🎬 Starter', value: computed.stage2_output_grams + ' g'},
+        {key: '🌾 Flour', value: round(computed?.mixing?.flour_grams) + ' g'},
+        {key: '💧 Water', value: round(computed?.mixing?.water_grams) + ' g'},
+        {key: '🧂 Salt', value: round(computed?.mixing?.salt_grams) + ' g'},
+        {key: '🎬 Starter', value: round(computed?.stage2?.output_grams) + ' g'},
       ]}/>
       {Arrow}
       <Table rows={[
-        {key: '🟰 Output', value: computed.final_dough_weight + ' g'},
+        {key: '🟰 Output', value: round(computed?.final_dough_weight) + ' g'},
       ]}/>
     </Card>
   </div>

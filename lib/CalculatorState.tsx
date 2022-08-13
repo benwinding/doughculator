@@ -1,4 +1,3 @@
-
 export type CalculatorState = {
   hydartion_percent: number;
   mixing_percent: number;

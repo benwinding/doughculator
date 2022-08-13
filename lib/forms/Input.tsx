@@ -1,3 +1,4 @@
+import { isNumber } from "lodash";
 import React from "react";
 import { useId } from "./useId";
 
@@ -26,17 +27,17 @@ export function InputLoafCount(props: InputProps) {
   return <InputNumber {...props} suffix={suffix} offsetRight={50} />
 }
 
-export function InputRange(props: InputProps) {
+export function InputRange(props: InputProps & { fixedTo?: number, suffix?: string }) {
   const id = useId(props.label);
-  const value = props.value.toFixed(2);
+  const value = props.value.toFixed(isNumber(props.fixedTo) ? props.fixedTo : 2);
   const onChange = (val: string) => {
     const float = +parseFloat(val).toFixed(2);
     props.onChange?.(float);
   }
-  return <div>
+  return <div className="relative">
     <label htmlFor={id} className="flex justify-between mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
       <div>{props.label}</div>
-      <div>{value}</div>
+      <div>{value} {props.suffix}</div>
     </label>
     <input id={id} type="range"
       min={props.min}
@@ -44,7 +45,8 @@ export function InputRange(props: InputProps) {
       step={props.step}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></input>
+      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
+    </input>
   </div>
 }
 

@@ -20,6 +20,9 @@ function DefaultCalculatorState(): CalculatorState {
 
 export function Calculator() {
   const [state, setState] = React.useState(DefaultCalculatorState());
+  const computed = useComputedCalculatorState(state)
+  const computedFixed = Object.entries(computed || {})
+    .reduce((acc, [key, val]) => (acc[key] = (+val).toFixed(0)) && acc, {} as CalculatorComputedState);
 
   const tabs: TabItem[] = [
     { label: 'Options', content: <CalculatorOptions s={state} setState={setState} /> },
@@ -27,49 +30,68 @@ export function Calculator() {
     { label: 'JSON', content: <pre>{JSON.stringify(state, null, 2)}</pre> },
   ]
 
-  return <div>
+  const Arrow = <div className="flex justify-center my-4">
+    <ArrowDownIcon width={30} className="text-gray-600"/>
+  </div>;
+
+  return <div className="p-3">
     <Tabs tabs={tabs} />
-    <OutputProperties state={state} />
+    {Arrow}
+    <div className="sm:flex justify-center">
+      <OutputProperties state={state} computed={computedFixed}/>
+    </div>
+    {Arrow}
+    <div className="flex py-6">
+      <Loaves state={state} computed={computedFixed}/>
+    </div>
   </div>
 }
 
-function OutputProperties({state}: {state: CalculatorState}) {
-  const computed = useComputedCalculatorState(state)
-  const computedFixed = Object.entries(computed || {})
-    .reduce((acc, [key, val]) => (acc[key] = (+val).toFixed(0)) && acc, {} as CalculatorComputedState);
+function Loaves(props: {state: CalculatorState, computed: CalculatorComputedState}) {
+  const loaves = new Array(props.state.loaf_count).fill(0);
+
+  return <div className="flex gap-3 flex-shrink-0 flex-wrap w-full justify-center">
+    {loaves.map((_, index) => <div className="bg-orange-100 rounded-xl p-8">
+      Loaf {index + 1}
+    </div>)}
+  </div>
+}
+
+function OutputProperties({state, computed}: {state: CalculatorState, computed: CalculatorComputedState}) {
+  const Arrow = <ArrowDownIcon className="ml-8 my-3 text-gray-600" width={30} />
   return <div className="py-3 flex flex-col sm:flex-row sm:flex-wrap gap-3">
     <Card title="Stage 1">
       <Table rows={[
-        {key: '🌾 Flour', value: computedFixed.stage1_flour_grams + ' g'},
-        {key: '💧 Water', value: computedFixed.stage1_water_grams + ' g'},
+        {key: '🌾 Flour', value: computed.stage1_flour_grams + ' g'},
+        {key: '💧 Water', value: computed.stage1_water_grams + ' g'},
         {key: '🎬 Starter', value: state.stage1_starter_grams + ' g'},
       ]}/>
-      <ArrowDownIcon className="ml-8" width={30} />
+      {Arrow}
       <Table rows={[
-        {key: '🟰 Output', value: computedFixed.stage1_output_grams + ' g'},
+        {key: '🟰 Output', value: computed.stage1_output_grams + ' g'},
       ]}/>
     </Card>
     <Card title="Stage 2">
       <Table rows={[
-        {key: '🌾 Flour', value: computedFixed.stage2_flour_grams + ' g'},
-        {key: '💧 Water', value: computedFixed.stage2_water_grams + ' g'},
+        {key: '🌾 Flour', value: computed.stage2_flour_grams + ' g'},
+        {key: '💧 Water', value: computed.stage2_water_grams + ' g'},
         {key: '🎬 Starter', value: state.stage2_starter_grams + ' g'},
       ]}/>
-      <ArrowDownIcon className="ml-8" width={30} />
+      {Arrow}
       <Table rows={[
-        {key: '🟰 Output', value: computedFixed.stage2_output_grams + ' g'},
+        {key: '🟰 Output', value: computed.stage2_output_grams + ' g'},
       ]}/>
     </Card>
     <Card title="Mixing">
       <Table rows={[
-        {key: '🌾 Flour', value: computedFixed.mixing_flour_grams + ' g'},
-        {key: '💧 Water', value: computedFixed.mixing_water_grams + ' g'},
-        {key: '🧂 Salt', value: computedFixed.mixing_salt_grams + ' g'},
-        {key: '🎬 Starter', value: computedFixed.stage2_output_grams + ' g'},
+        {key: '🌾 Flour', value: computed.mixing_flour_grams + ' g'},
+        {key: '💧 Water', value: computed.mixing_water_grams + ' g'},
+        {key: '🧂 Salt', value: computed.mixing_salt_grams + ' g'},
+        {key: '🎬 Starter', value: computed.stage2_output_grams + ' g'},
       ]}/>
-      <ArrowDownIcon className="ml-8" width={30} />
+      {Arrow}
       <Table rows={[
-        {key: '🟰 Output', value: computedFixed.final_dough_weight + ' g'},
+        {key: '🟰 Output', value: computed.final_dough_weight + ' g'},
       ]}/>
     </Card>
   </div>
@@ -97,11 +119,19 @@ function Card(props: { title: string, children: React.ReactNode }) {
 function CalculatorOptions({s, setState}: { s: CalculatorState, setState: (s: CalculatorState) => void }) {
   const setPar = (partialState: Partial<CalculatorState>) => setState({ ...s, ...partialState });
 
-  return <div>
-    <p className="text-black italic my-4">Percentages</p>
-    <InputRange value={s.hydartion_percent} onChange={v => setPar({hydartion_percent: v})} label="Hydration % (Water/Flour)" />
-    <InputRange value={s.mixing_percent} onChange={v => setPar({mixing_percent: v})} label="Mixing % (Levain/Weight)" />
-    <InputRange value={s.salt_percent} onChange={v => setPar({salt_percent: v})} label="Salt Percent" />
+  const loafSuffix = s.loaf_count === 1 ? 'loaf' : 'loaves';
+
+  return <div className="w-full flex flex-col sm:flex-row gap-3">
+    <div className="sm:w-1/2">
+      <Heading>Weight</Heading>
+      <InputRange fixedTo={0} min={100} max={1000} step={1} value={s.loaf_weight_grams} onChange={v => setPar({loaf_weight_grams: v})} label="Loaf weight" suffix="g"/>
+      <InputRange fixedTo={0} min={1} max={20} step={1} value={s.loaf_count} onChange={v => setPar({loaf_count: v})} label="Loaf count" suffix={loafSuffix}/>
+    </div>
+    <div className="sm:w-1/2">
+      <Heading>Percentages</Heading>
+      <InputRange fixedTo={0} value={s.hydartion_percent} onChange={v => setPar({hydartion_percent: v})} label="Hydration % (Water/Flour)" suffix="%"/>
+      <InputRange fixedTo={0} value={s.mixing_percent} onChange={v => setPar({mixing_percent: v})} label="Mixing % (Levain/Weight)" suffix="%"/>
+    </div>
   </div>
 }
 
@@ -109,16 +139,20 @@ function CalculatorAdvancedOptions({s, setState}: { s: CalculatorState, setState
   const setPar = (partialState: Partial<CalculatorState>) => setState({ ...s, ...partialState });
 
   return <div>
-    <p className="text-black italic my-4">Percentages</p>
+    <Heading>Percentages</Heading>
     <InputPercent value={s.hydartion_percent} onChange={v => setPar({hydartion_percent: v})} label="Hydration % (Water/Flour)" />
     <InputPercent value={s.mixing_percent} onChange={v => setPar({mixing_percent: v})} label="Mixing % (Levain/Weight)" />
     <InputPercent value={s.salt_percent} onChange={v => setPar({salt_percent: v})} label="Salt Percent" />
-    <p className="text-black italic my-4">Weights</p>
+    <Heading>Weights</Heading>
     <InputGrams value={s.stage1_excess_grams} onChange={v => setPar({stage1_excess_grams: v})} label="Excess (From Stage 1)" />
     <InputGrams value={s.loaf_weight_grams} onChange={v => setPar({loaf_weight_grams: v})} label="Loaf weight" />
     <InputLoafCount value={s.loaf_count} onChange={v => setPar({loaf_count: v})} label="Loaf count" />
-    <p className="text-black italic my-4">Weather Determined</p>
+    <Heading>Weather Determined</Heading>
     <InputGrams value={s.stage1_starter_grams} onChange={v => setPar({stage1_starter_grams: v})} label="Stage 1 Starter" />
     <InputGrams value={s.stage2_starter_grams} onChange={v => setPar({stage2_starter_grams: v})} label="Stage 2 Starter" />
   </div>
+}
+
+function Heading(props: { children: React.ReactNode }) {
+  return <h3 className="text-black italic my-4">{props.children}</h3>
 }

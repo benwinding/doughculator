@@ -1,6 +1,7 @@
 import React from "react";
+import ArrowDownIcon from "@heroicons/react/solid/ArrowDownIcon";
 import { CalculatorState } from "./CalculatorState";
-import { useComputedCalculatorState } from "./ComputedState";
+import { CalculatorComputedState, useComputedCalculatorState } from "./ComputedState";
 import { InputPercent, InputGrams, InputLoafCount, InputRange } from "./forms/Input";
 import { TabItem, Tabs } from "./Tabs";
 
@@ -34,9 +35,62 @@ export function Calculator() {
 
 function OutputProperties({state}: {state: CalculatorState}) {
   const computed = useComputedCalculatorState(state)
-  const computedFixed = Object.entries(computed || {}).reduce((acc, [key, val]) => (acc[key] = (+val).toFixed(2)) && acc, {})
-  return <div>
-    <pre>{JSON.stringify(computedFixed, null, 2)}</pre>
+  const computedFixed = Object.entries(computed || {})
+    .reduce((acc, [key, val]) => (acc[key] = (+val).toFixed(0)) && acc, {} as CalculatorComputedState);
+  return <div className="py-3 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+    <Card title="Stage 1">
+      <Table rows={[
+        {key: '🌾 Flour', value: computedFixed.stage1_flour_grams + ' g'},
+        {key: '💧 Water', value: computedFixed.stage1_water_grams + ' g'},
+        {key: '🎬 Starter', value: state.stage1_starter_grams + ' g'},
+      ]}/>
+      <ArrowDownIcon className="ml-8" width={30} />
+      <Table rows={[
+        {key: '🟰 Output', value: computedFixed.stage1_output_grams + ' g'},
+      ]}/>
+    </Card>
+    <Card title="Stage 2">
+      <Table rows={[
+        {key: '🌾 Flour', value: computedFixed.stage2_flour_grams + ' g'},
+        {key: '💧 Water', value: computedFixed.stage2_water_grams + ' g'},
+        {key: '🎬 Starter', value: state.stage2_starter_grams + ' g'},
+      ]}/>
+      <ArrowDownIcon className="ml-8" width={30} />
+      <Table rows={[
+        {key: '🟰 Output', value: computedFixed.stage2_output_grams + ' g'},
+      ]}/>
+    </Card>
+    <Card title="Mixing">
+      <Table rows={[
+        {key: '🌾 Flour', value: computedFixed.mixing_flour_grams + ' g'},
+        {key: '💧 Water', value: computedFixed.mixing_water_grams + ' g'},
+        {key: '🧂 Salt', value: computedFixed.mixing_salt_grams + ' g'},
+        {key: '🎬 Starter', value: computedFixed.stage2_output_grams + ' g'},
+      ]}/>
+      <ArrowDownIcon className="ml-8" width={30} />
+      <Table rows={[
+        {key: '🟰 Output', value: computedFixed.final_dough_weight + ' g'},
+      ]}/>
+    </Card>
+  </div>
+}
+
+type Row = { key: string, value: string | number };
+function Table(props: {rows: Row[] }) {
+  return <table>
+    <tbody>
+      {props.rows.map(row => <tr key={row.key}>
+        <td className="pr-2">{row.key}</td>
+        <td className="text-right">{row.value}</td>
+      </tr>)}
+    </tbody>
+  </table>
+}
+
+function Card(props: { title: string, children: React.ReactNode }) {
+  return <div className="p-3 bg-gray-100 rounded-xl shadow-xl flex flex-col">
+    <h1 className="text-2xl">{props.title}</h1>
+    {props.children}
   </div>
 }
 

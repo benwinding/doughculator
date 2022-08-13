@@ -1,0 +1,33 @@
+on: 
+  push: 
+    branches: 
+      - master
+
+name: Build and Publish
+jobs:
+  deploy:
+    if: "!contains(github.event.head_commit.message, 'no-ci')"
+    needs: build
+    name: Deploy Demo
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: actions/setup-node@v1
+      with:
+        node-version: 10.17
+    - uses: actions/cache@v1
+      id: cache-modules
+      with:
+        path: node_modules
+        key: ${{ runner.OS }}-build-${{ hashFiles('package.json') }}
+    - run: yarn install --pure-lockfile
+      if: steps.cache-modules.outputs.cache-hit != 'true'
+    - run: yarn build
+      working-directory: ./demo
+    - name: Deploy 🚀
+      if: github.ref == 'refs/heads/master'
+      uses: JamesIves/github-pages-deploy-action@releases/v3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: gh-pages # The branch the action should deploy to.
+        FOLDER: out # The folder the action should deploy.

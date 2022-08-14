@@ -48,9 +48,10 @@ export function Calculator() {
 
 function Loaves(props: {state: CalculatorState, computed: CalculatorComputedState}) {
   const loaves = new Array(props.state.loaf_count).fill(0);
+  const w = props.state.loaf_weight_grams;
 
   return <div className="flex gap-3 flex-shrink-0 flex-wrap w-full justify-center">
-    {loaves.map((_, index) => <div key={index} className="bg-orange-100 rounded-3xl p-8 flex-shrink-0 flex flex-col items-center">
+    {loaves.map((_, index) => <div key={index} style={{fontSize: w / 30, padding: w / 30 }} className="bg-orange-100 rounded-3xl flex-shrink-0 flex flex-col items-center">
       <span>Loaf {index + 1}</span>
       <span className="text-gray-500 text-xs">{props.state.loaf_weight_grams} g</span>
     </div>)}

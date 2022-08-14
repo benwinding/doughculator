@@ -27,9 +27,9 @@ export function InputLoafCount(props: InputProps) {
   return <InputNumber {...props} suffix={suffix} offsetRight={50} />
 }
 
-export function InputRange(props: InputProps & { fixedTo?: number, suffix?: string }) {
+export function InputRange(props: InputProps & { decimals?: number, suffix?: string }) {
   const id = useId(props.label);
-  const value = props.value.toFixed(isNumber(props.fixedTo) ? props.fixedTo : 2);
+  const value = props.value.toFixed(isNumber(props.decimals) ? props.decimals : 0);
   const onChange = (val: string) => {
     const float = +parseFloat(val).toFixed(2);
     props.onChange?.(float);

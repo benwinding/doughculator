@@ -21,7 +21,7 @@ jobs:
         key: ${{ runner.OS }}-build-${{ hashFiles('package.json') }}
     - run: yarn install --pure-lockfile
       if: steps.cache-modules.outputs.cache-hit != 'true'
-    - run: NODE_ENV=prod yarn build
+    - run: NODE_ENV=production yarn build
     - name: Deploy 🚀
       if: github.ref == 'refs/heads/master'
       uses: JamesIves/github-pages-deploy-action@releases/v3

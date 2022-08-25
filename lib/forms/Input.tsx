@@ -8,18 +8,15 @@ type MaxMinStep = {
   step?: number,
 }
 
-type InputProps = {
+export type InputProps = {
   label: string,
   value?: number,
-  onChange?: (val: number) => void
+  displayValue?: (val: number) => string | number,
+  onChange?: (val: number) => void,
 } & MaxMinStep;
 
 export function InputGrams(props: InputProps) {
   return <InputNumber {...props} suffix="g" />
-}
-
-export function InputPercent(props: InputProps) {
-  return <InputNumber min={0} max={100} {...props} suffix="%" offsetRight={30} />
 }
 
 export function InputLoafCount(props: InputProps) {
@@ -37,7 +34,7 @@ export function InputRange(props: InputProps & { decimals?: number, suffix?: str
   return <div className="relative">
     <label htmlFor={id} className="flex justify-between mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
       <div>{props.label}</div>
-      <div>{value} {props.suffix}</div>
+      <div>{props.displayValue ? props.displayValue(props.value) : value} {props.suffix}</div>
     </label>
     <input id={id} type="range"
       min={props.min}
@@ -48,6 +45,16 @@ export function InputRange(props: InputProps & { decimals?: number, suffix?: str
       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
     </input>
   </div>
+}
+
+export function InputPercent(props: InputProps) {
+  return <InputRange
+    min={0} max={100} step={1}
+    value={props.value * 100}
+    onChange={v => props.onChange(v / 100)}
+    label={props.label}
+    suffix="%"
+  />
 }
 
 function InputNumber(props: InputProps & { suffix: string, offsetRight?: number }) {

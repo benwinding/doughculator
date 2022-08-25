@@ -1,22 +1,14 @@
 import React from "react";
 import ArrowRightIcon from "@heroicons/react/solid/ArrowRightIcon";
-import { CalculatorState } from "./CalculatorState";
+import { CalculatorState } from "./models/CalculatorState";
 import { CalculatorComputedState, useComputedCalculatorState } from "./ComputedState";
-import { InputPercent, InputGrams, InputLoafCount, InputRange } from "./forms/Input";
+import { InputPercent, InputRange } from "./forms/Input";
 import { TabItem, Tabs } from "./Tabs";
 import { round } from "lodash";
+import { SummerDefault2Loaf } from "./models/default-states";
 
 function DefaultCalculatorState(): CalculatorState {
-  return {
-    hydartion_percent: 75,
-    mixing_percent: 25,
-    salt_percent: 1,
-    stage1_excess_grams: 20,
-    loaf_weight_grams: 755,
-    loaf_count: 2,
-    stage1_starter_grams: 5,
-    stage2_starter_grams: 5,
-  }
+  return SummerDefault2Loaf();
 }
 
 export function Calculator() {
@@ -34,48 +26,66 @@ export function Calculator() {
     <ArrowDownAcross className="p-6 px-10" height="140px" width="100%" />
     <div className="flex flex-col items-center">
       <div className="grid grid-cols-1">
-        <OutputProperties state={state} computed={computed} />
+        {state && computed && <OutputProperties state={state} computed={computed} />}
       </div>
     </div>
   </div>
 }
 
 function OutputProperties({ state, computed }: { state: CalculatorState, computed: CalculatorComputedState }) {
+  const cs1 = computed.stage1;
+  const cs1_total = cs1.flour_g + cs1.starter_g + cs1.water_g;
+  const cs2 = computed.stage2;
+  const cs2_total = cs2.flour_g + cs2.starter_g + cs2.water_g;
+  const cs3 = computed.stage3;
+  const cs3_total = cs3.flour_g + cs3.starter_g + cs3.water_g + cs3.salt_g;
+
+  function r(input: number, precision?: number): string {
+    return round(input, precision).toLocaleString() + ' g';
+  }
+
   return <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-start">
     <div className="flex items-center gap-3">
       <Card title="Stage 1">
         <Table rows={[
-          { key: '🌾 Flour', value: round(computed?.stage1?.flour_grams) + ' g' },
-          { key: '💧 Water', value: round(computed?.stage1?.water_grams) + ' g' },
-          { key: '🎬 Starter', value: round(state.stage1_starter_grams) + ' g' },
+          { key: '🌾 Flour', value: r(cs1.flour_g, 1)},
+          { key: '💧 Water', value: r(cs1.water_g, 1)},
+          { key: '🎬 Starter', value: r(cs1.starter_g, 1)},
         ]} />
       </Card>
-      <TotalArrow weight={computed?.stage1?.output_grams} />
+      <TotalArrow weight={r(cs1_total, 1)} icon="🎬" />
     </div>
     <div className="flex items-center gap-3">
-      <Card title="Stage 2">
-        <Table rows={[
-          { key: '🌾 Flour', value: round(computed?.stage2?.flour_grams) + ' g' },
-          { key: '💧 Water', value: round(computed?.stage2?.water_grams) + ' g' },
-          { key: '🎬 Starter', value: round(state.stage2_starter_grams) + ' g' },
-        ]} />
-      </Card>
-      <TotalArrow weight={computed?.stage2?.output_grams} />
+      <div className="flex flex-col gap-3">
+        <Card title="Stage 2">
+          <Table rows={[
+            { key: '🌾 Flour', value: r(cs2.flour_g)},
+            { key: '💧 Water', value: r(cs2.water_g)},
+            { key: '🎬 Starter', value: r(cs2.starter_g, 1)},
+          ]} />
+        </Card>
+        <Card title="Excess">
+          <Table rows={[
+            { key: '🎬 Starter', value: r(state.desired_excess_weight_grams)},
+          ]} />
+        </Card>
+      </div>
+      <TotalArrow weight={r(cs2_total)} icon="🎬" />
     </div>
     <div className="flex items-center gap-3">
-      <Card title="Mixing">
+      <Card title="Stage 3">
         <Table rows={[
-          { key: '🌾 Flour', value: round(computed?.mixing?.flour_grams) + ' g' },
-          { key: '💧 Water', value: round(computed?.mixing?.water_grams) + ' g' },
-          { key: '🧂 Salt', value: round(computed?.mixing?.salt_grams) + ' g' },
-          { key: '🎬 Starter', value: round(computed?.stage2?.output_grams) + ' g' },
+          { key: '🌾 Flour', value: r(cs3.flour_g)},
+          { key: '💧 Water', value: r(cs3.water_g)},
+          { key: '🧂 Salt', value: r(cs3.salt_g)},
+          { key: '🎬 Starter', value: r(cs3.starter_g)},
         ]} />
       </Card>
-      <TotalArrow weight={computed?.final_dough_weight} />
+      <TotalArrow weight={r(cs3_total)} icon="🍞" />
     </div>
     <Card title="Output">
       <Table rows={[
-          { key: '🍞 ' + loafSuffix(state.loaf_count), value: `${round(state.loaf_count)} x ${round(state.loaf_weight_grams)} g` },
+          { key: '🍞 ' + loafSuffix(state.loaf_count), value: `${round(state.loaf_count)} x ${r(state.loaf_weight_grams)}` },
       ]} />
       <Loaves state={state} computed={computed} />
     </Card>
@@ -98,10 +108,10 @@ function Loaf({weight}: {weight: number}) {
   </div>
 }
 
-function TotalArrow(props: {weight: number}) {
+function TotalArrow(props: {weight: string, icon: string}) {
   return <div className="flex flex-col items-center">
     <ArrowRightIcon className="text-gray-600" width={30} />
-    <span className="whitespace-nowrap">{round(props.weight) + ' g'}</span>
+    <span className="whitespace-nowrap font-mono text-sm">{props.icon} {props.weight}</span>
   </div>
 }
 
@@ -111,7 +121,7 @@ function Table(props: { rows: Row[] }) {
     <tbody>
       {props.rows.map(row => <tr key={row.key}>
         <td className="pr-2 whitespace-nowrap">{row.key}</td>
-        <td className="text-right whitespace-nowrap">{row.value}</td>
+        <td className="text-right whitespace-nowrap font-mono text-sm">{row.value}</td>
       </tr>)}
     </tbody>
   </table>
@@ -128,42 +138,76 @@ function loafSuffix(count: number) {
   return count === 1 ? 'loaf' : 'loaves';
 }
 
-function CalculatorOptions({ s, setState }: { s: CalculatorState, setState: (s: CalculatorState) => void }) {
-  const setPar = (partialState: Partial<CalculatorState>) => setState({ ...s, ...partialState });
-
-  return <div className="mt-3"><Card><div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
+function CalculatorOptions({ s, setState }: { s: CalculatorState, setState: React.Dispatch<React.SetStateAction<CalculatorState>> }) {
+  return <div className="mt-3"><Card><div className="w-full grid grid-cols-1 sm:grid-cols-4 gap-3">
+    <div>
+      <Heading>Stage 1</Heading>
+      <InputPercent
+        value={s.stage1.hydrationPercent}
+        onChange={v => setState(s => { s.stage1.hydrationPercent = v; return {...s}; })}
+        label="Hydration % (Water/Flour)"
+      />
+      <InputPercent
+        value={s.stage1.starterPercent}
+        onChange={v => setState(s => { s.stage1.starterPercent = v; return {...s}; })}
+        label="Starter % (Starter/Flour)"
+      />
+    </div>
+    <div>
+      <Heading>Stage 2</Heading>
+      <InputPercent
+        value={s.stage2.hydrationPercent}
+        onChange={v => setState(s => { s.stage2.hydrationPercent = v; return {...s}; })}
+        label="Hydration % (Water/Flour)"
+      />
+      <InputPercent
+        value={s.stage2.starterPercent}
+        onChange={v => setState(s => { s.stage2.starterPercent = v; return {...s}; })}
+        label="Starter % (Starter/Flour)"
+      />
+      <InputRange min={0} max={50} step={1} value={s.desired_excess_weight_grams} onChange={v => setState({ ...s, desired_excess_weight_grams: v })} label="Excess starter weight" suffix="g" />
+    </div>
+    <div>
+      <Heading>Stage 3</Heading>
+      <InputPercent
+        value={s.stage3.hydrationPercent}
+        onChange={v => setState(s => { s.stage3.hydrationPercent = v; return {...s}; })}
+        label="Hydration % (Water/Flour)"
+      />
+      <InputPercent
+        value={s.stage3.starterPercent}
+        onChange={v => setState(s => { s.stage3.starterPercent = v; return {...s}; })}
+        label="Starter % (Starter/Flour)"
+      />
+      <InputPercent
+        value={s.stage3.saltPercent}
+        onChange={v => setState(s => { s.stage3.saltPercent = v; return {...s}; })}
+        label="Starter % (Salt/Flour)"
+      />
+    </div>
     <div>
       <Heading>Weight</Heading>
-      <InputRange min={100} max={1000} step={1} value={s.loaf_weight_grams} onChange={v => setPar({ loaf_weight_grams: v })} label="Loaf weight" suffix="g" />
-      <InputRange min={1} max={20} step={1} value={s.loaf_count} onChange={v => setPar({ loaf_count: v })} label="Loaf count" suffix={loafSuffix(s.loaf_count)} />
-    </div>
-    <div>
-      <Heading>Percentages</Heading>
-      <InputRange value={s.hydartion_percent} onChange={v => setPar({ hydartion_percent: v })} label="Hydration % (Water/Flour)" suffix="%" />
-    </div>
-    <div>
-      <Heading>Percentages</Heading>
-      <InputRange value={s.hydartion_percent} onChange={v => setPar({ hydartion_percent: v })} label="Hydration % (Water/Flour)" suffix="%" />
-      <InputRange value={s.mixing_percent} onChange={v => setPar({ mixing_percent: v })} label="Mixing % (Levain/Weight)" suffix="%" />
+      <InputRange min={100} max={1000} step={1} value={s.loaf_weight_grams} onChange={v => setState({ ...s, loaf_weight_grams: v })} label="Loaf weight" suffix="g" />
+      <InputRange min={1} max={20} step={1} value={s.loaf_count} onChange={v => setState({ ...s, loaf_count: v })} label="Loaf count" suffix={loafSuffix(s.loaf_count)} />
     </div>
   </div></Card></div>
 }
 
-function CalculatorAdvancedOptions({ s, setState }: { s: CalculatorState, setState: (s: CalculatorState) => void }) {
+function CalculatorAdvancedOptions({ s, setState }: { s: CalculatorState, setState: React.Dispatch<React.SetStateAction<CalculatorState>> }) {
   const setPar = (partialState: Partial<CalculatorState>) => setState({ ...s, ...partialState });
 
   return <div>
-    <Heading>Percentages</Heading>
-    <InputPercent value={s.hydartion_percent} onChange={v => setPar({ hydartion_percent: v })} label="Hydration % (Water/Flour)" />
+    {/* <Heading>Percentages</Heading> */}
+    {/* <InputPercent value={s.hydartion_percent} onChange={v => setPar({ hydartion_percent: v })} label="Hydration % (Water/Flour)" />
     <InputPercent value={s.mixing_percent} onChange={v => setPar({ mixing_percent: v })} label="Mixing % (Levain/Weight)" />
     <InputPercent value={s.salt_percent} onChange={v => setPar({ salt_percent: v })} label="Salt Percent" />
     <Heading>Weights</Heading>
-    <InputGrams value={s.stage1_excess_grams} onChange={v => setPar({ stage1_excess_grams: v })} label="Excess (From Stage 1)" />
-    <InputGrams value={s.loaf_weight_grams} onChange={v => setPar({ loaf_weight_grams: v })} label="Loaf weight" />
+    <InputGrams value={s.stage1_excess_g} onChange={v => setPar({ stage1_excess_g: v })} label="Excess (From Stage 1)" />
+    <InputGrams value={s.loaf_weight_g} onChange={v => setPar({ loaf_weight_g: v })} label="Loaf weight" />
     <InputLoafCount value={s.loaf_count} onChange={v => setPar({ loaf_count: v })} label="Loaf count" />
     <Heading>Weather Determined</Heading>
-    <InputGrams value={s.stage1_starter_grams} onChange={v => setPar({ stage1_starter_grams: v })} label="Stage 1 Starter" />
-    <InputGrams value={s.stage2_starter_grams} onChange={v => setPar({ stage2_starter_grams: v })} label="Stage 2 Starter" />
+    <InputGrams value={s.stage1_starter_g} onChange={v => setPar({ stage1_starter_g: v })} label="Stage 1 Starter" />
+    <InputGrams value={s.stage2_starter_g} onChange={v => setPar({ stage2_starter_g: v })} label="Stage 2 Starter" /> */}
   </div>
 }
 

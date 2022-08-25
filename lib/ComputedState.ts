@@ -1,103 +1,37 @@
 import React from "react";
-import { CalculatorState } from "./CalculatorState";
-import { memoize } from "lodash";
+import { CalculatorState } from "./models/CalculatorState";
+import { CalculateStage1, CalculateStage2, Invert_GetFinalWeightGrams, Stage1Output, Stage2Output, Stage3Output } from "./models/stages";
 
 export type CalculatorComputedState = {
-  stage1: {
-    flour_grams: number;
-    water_grams: number;
-    combined_flour_water_grams: number;
-    output_grams: number;
-  }
-  stage2: {
-    flour_grams: number;
-    water_grams: number;
-    combined_flour_water_grams: number;
-    output_grams: number;
-  }
-  mixing: {
-    flour_grams: number;
-    water_grams: number;
-    combined_flour_water_grams: number;
-    salt_grams: number;
-  }
-  final_dough_weight: number;
+  stage1: Stage1Output;
+  stage2: Stage2Output;
+  stage3: Stage3Output;
+  final_dough_weight_g: number;
 }
 
 export function useComputedCalculatorState(state: CalculatorState): CalculatorComputedState | undefined {
   const [computed, setComputed] = React.useState<CalculatorComputedState>();
 
   React.useEffect(() => {
-    const s = {...state};
-    s.hydartion_percent = toPercent(s.hydartion_percent);
-    s.salt_percent = toPercent(s.salt_percent);
-    s.mixing_percent = toPercent(s.mixing_percent);
+    const stage3out = Invert_GetFinalWeightGrams(state.loaf_weight_grams * state.loaf_count, state.stage3);
+    const stage2out = CalculateStage2({
+      desiredWeight: stage3out.starter_g,
+      hydrationPercent: state.stage2.hydrationPercent,
+      starterPercent: state.stage2.starterPercent,
+    });
+    const stage1out = CalculateStage1({
+      desiredWeight: stage2out.starter_g + state.desired_excess_weight_grams,
+      hydrationPercent: state.stage1.hydrationPercent,
+      starterPercent: state.stage1.starterPercent,
+    });
     setComputed({
-      stage1: {
-        flour_grams: calc_stage1_flour_grams(s),
-        water_grams: calc_stage1_water_grams(s),
-        combined_flour_water_grams: calc_stage1_combined_flour_water_grams(s),
-        output_grams: calc_stage1_output_grams(s),
-      },
-      stage2: {
-        flour_grams: calc_stage2_flour_grams(s),
-        water_grams: calc_stage2_water_grams(s),
-        combined_flour_water_grams: calc_stage2_combined_flour_water_grams(s),
-        output_grams: calc_stage2_output_grams(s),
-      },
-      mixing: {
-        flour_grams: calc_mixing_flour_grams(s),
-        water_grams: calc_mixing_water_grams(s),
-        combined_flour_water_grams: calc_mixing_combined_flour_water_grams(s),
-        salt_grams: calc_mixing_salt_grams(s),
-      },
-      final_dough_weight: calc_final_dough_weight(s),
+      final_dough_weight_g: state.loaf_weight_grams,
+      stage3: stage3out,
+      stage2: stage2out,
+      stage1: stage1out,
     })
   }, [state]);
 
   return computed;
 }
 
-const calc_stage1_flour_grams = memoize(function (state: CalculatorState): number {
-  return calc_stage1_combined_flour_water_grams(state) / (1 + state.hydartion_percent);
-})
-const calc_stage1_water_grams = memoize(function (state: CalculatorState): number {
-  return calc_stage1_combined_flour_water_grams(state) * state.hydartion_percent / (1 + state.hydartion_percent);
-})
-const calc_stage1_combined_flour_water_grams = memoize(function (state: CalculatorState): number {
-  return calc_stage1_output_grams(state) - state.stage1_starter_grams;
-})
-const calc_stage1_output_grams = memoize(function (state: CalculatorState): number {
-  return state.stage1_starter_grams + state.stage1_excess_grams;
-})
-const calc_stage2_flour_grams = memoize(function (state: CalculatorState): number {
-  return calc_stage2_combined_flour_water_grams(state) / (1 + state.hydartion_percent);
-})
-const calc_stage2_water_grams = memoize(function (state: CalculatorState): number {
-  return calc_stage2_combined_flour_water_grams(state) * state.hydartion_percent / (1 + state.hydartion_percent);
-})
-const calc_stage2_combined_flour_water_grams = memoize(function (state: CalculatorState): number {
-  return calc_stage2_output_grams(state) - calc_stage1_output_grams(state);
-})
-const calc_stage2_output_grams = memoize(function (state: CalculatorState): number {
-  return state.mixing_percent * calc_final_dough_weight(state);
-})
-const calc_mixing_flour_grams = memoize(function (state: CalculatorState): number {
-  return calc_mixing_combined_flour_water_grams(state) / (1 + state.hydartion_percent);
-})
-const calc_mixing_water_grams = memoize(function (state: CalculatorState): number {
-  return calc_mixing_combined_flour_water_grams(state) * state.hydartion_percent / (1 + state.hydartion_percent);
-})
-const calc_mixing_combined_flour_water_grams = memoize(function (state: CalculatorState): number {
-  return calc_final_dough_weight(state) - calc_mixing_salt_grams(state) - calc_stage2_output_grams(state);
-})
-const calc_mixing_salt_grams = memoize(function (state: CalculatorState): number {
-  return state.salt_percent * calc_final_dough_weight(state);
-})
-const calc_final_dough_weight = memoize(function (state: CalculatorState): number {
-  return state.loaf_weight_grams * state.loaf_count;
-})
-
-function toPercent(num: number): number {
-  return num / 100;
-}
